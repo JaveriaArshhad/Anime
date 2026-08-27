@@ -1,2 +1,8 @@
 # Anime
-Hey, I’m just trying out my coding skills and made this website for fun. It’s just a tracker of which anime I’ve watched, since I always forget.
+
+A simple website to track anime in three categories:
+- Watched
+- Yet to Watch
+- Recommendations
+
+Open `/home/runner/work/Anime/Anime/index.html` in a browser to view the site.

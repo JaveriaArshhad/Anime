@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Anime Tracker</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f5f7fb;
+        color: #1b1b1b;
+      }
+
+      main {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+
+      section {
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        padding: 1rem;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+
+      li + li {
+        margin-top: 0.4rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Anime Collection</h1>
+      <p>
+        A simple place to keep track of what I have watched, what I still want
+        to watch, and what I recommend to others.
+      </p>
+      <div class="grid">
+        <section aria-labelledby="watched-heading">
+          <h2 id="watched-heading">Watched</h2>
+          <ul>
+            <li>Attack on Titan</li>
+            <li>Fullmetal Alchemist: Brotherhood</li>
+            <li>Demon Slayer</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="watchlist-heading">
+          <h2 id="watchlist-heading">Yet to Watch</h2>
+          <ul>
+            <li>Vinland Saga</li>
+            <li>Jujutsu Kaisen</li>
+            <li>Frieren: Beyond Journey's End</li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="recommendations-heading">
+          <h2 id="recommendations-heading">Recommendations</h2>
+          <ul>
+            <li>Death Note</li>
+            <li>Steins;Gate</li>
+            <li>Your Name</li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
