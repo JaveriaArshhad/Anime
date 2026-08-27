@@ -9,7 +9,7 @@
 <body>
     <header>
         <h1>🔍 Search New Anime</h1>
-        <p>Find any anime and add it to your wishlist!</p>
+        <p>Find any anime and recommend it!</p>
     </header>
 
     <div id="nav-placeholder"></div>
@@ -22,6 +22,20 @@
         </div>
         
         <section id="resultsContainer" class="anime-grid"></section>
+    </div>
+
+    <!-- Recommend confirmation modal -->
+    <div id="recommendModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeRecommendModal()">&times;</span>
+            <h2 id="recommendTitle">Recommend this anime?</h2>
+            <p id="recommendStatusText" style="min-height: 1.2em; font-weight: 700;"></p>
+            <div class="add-category-box">
+                <input type="text" id="recommenderName" placeholder="Your Name (optional)">
+                <button id="confirmRecommendBtn" class="btn-yes" style="width:100%;">✨ Recommend</button>
+                <input type="text" id="website" name="website" style="display:none;" tabindex="-1" autocomplete="off">
+            </div>
+        </div>
     </div>
 
     <script src="search.js"></script>

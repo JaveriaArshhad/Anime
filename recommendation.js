@@ -18,15 +18,82 @@ document.getElementById("animeName").addEventListener("keydown", (e) => {
     if (e.key === "Enter") addRecommendation();
 });
 
-// --- MODAL CONTROL (admin-only: confirming a delete) ---
+// --- MODAL CONTROL (admin-only) ---
+
+function openOptionsModal(anime) {
+    currentAnime = anime;
+    currentId = anime.id;
+    document.getElementById('optionsTitle').innerText = anime.title;
+    document.getElementById('wishlistStatusText').textContent = "";
+    document.getElementById('optionsModal').style.display = "flex";
+}
+
+function closeOptionsModal() {
+    document.getElementById('optionsModal').style.display = "none";
+}
 
 function closeRemoveModal() {
     document.getElementById('removeModal').style.display = "none";
 }
 
+document.getElementById('requestDeleteBtn').onclick = () => {
+    closeOptionsModal();
+    document.getElementById('removeText').innerText = `Are you sure you want to remove "${currentAnime.title}"?`;
+    document.getElementById('removeModal').style.display = "flex";
+};
+
 document.getElementById('confirmRemove').onclick = () => {
     removeSingle(currentId);
     closeRemoveModal();
+};
+
+document.getElementById('addWishlistBtn').onclick = async () => {
+    const passcode = sessionStorage.getItem("adminPasscode");
+    const statusText = document.getElementById('wishlistStatusText');
+    const btn = document.getElementById('addWishlistBtn');
+    const originalText = btn.textContent;
+    btn.textContent = "Adding...";
+    btn.disabled = true;
+
+    try {
+        const response = await fetch("/.netlify/functions/wishlist", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                animeTitle: currentAnime.title,
+                animeImage: currentAnime.image,
+                animeLink: currentAnime.link,
+                passcode,
+            }),
+        });
+
+        if (response.status === 409) {
+            statusText.style.color = "#e06c8a";
+            statusText.textContent = "Already on the wishlist!";
+            return;
+        }
+        if (response.status === 403) {
+            statusText.style.color = "#e06c8a";
+            statusText.textContent = "Your admin session isn't valid. Please log in again.";
+            return;
+        }
+        if (!response.ok) {
+            statusText.style.color = "#e06c8a";
+            statusText.textContent = "Couldn't add it. Please try again.";
+            return;
+        }
+
+        statusText.style.color = "#2f6b2f";
+        statusText.textContent = `✨ ${currentAnime.title} added to your wishlist!`;
+        setTimeout(closeOptionsModal, 900);
+    } catch (error) {
+        console.error("Error adding to wishlist:", error);
+        statusText.style.color = "#e06c8a";
+        statusText.textContent = "Connection lost. Please check your internet!";
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 };
 
 // --- CORE RECOMMENDATION LOGIC ---
@@ -55,11 +122,12 @@ const searchResultsBox = document.getElementById("searchResults");
 const searchHint = document.getElementById("searchHint");
 
 async function addRecommendation() {
-    const rawUserName = document.getElementById("userName").value.trim();
+    const typedName = document.getElementById("userName").value.trim();
+    const rawUserName = typedName || "Anonymous";
     const animeName = document.getElementById("animeName").value.trim();
 
-    if (!rawUserName || !animeName) {
-        alert("Please enter your name and anime title!");
+    if (!animeName) {
+        alert("Please enter an anime title!");
         return;
     }
 
@@ -142,11 +210,17 @@ async function confirmAndAddRecommendation(animeData, rawUserName) {
                 animeTitle: animeData.title,
                 animeImage: animeData.image,
                 animeLink: animeData.link,
+                website: document.getElementById("website")?.value || "",
             }),
         });
 
         if (response.status === 409) {
             alert(`${animeData.title} is already on ${rawUserName}'s list!`);
+            return;
+        }
+
+        if (response.status === 429) {
+            alert("You're adding recommendations too fast! Please wait a few minutes.");
             return;
         }
 
@@ -220,10 +294,10 @@ async function displayRecommendations() {
             const card = document.createElement("div");
             card.classList.add("anime-card");
 
-            // Only admins can click a card to delete it — everyone else just views
+            // Only admins can click a card to manage it — everyone else just views
             if (adminMode) {
                 card.style.cursor = "pointer";
-                card.onclick = () => requestDelete(anime);
+                card.onclick = () => openOptionsModal(anime);
             } else {
                 card.style.cursor = "default";
             }
@@ -237,13 +311,6 @@ async function displayRecommendations() {
             userDiv.appendChild(card);
         });
     }
-}
-
-function requestDelete(anime) {
-    currentId = anime.id;
-    currentAnime = anime;
-    document.getElementById('removeText').innerText = `Are you sure you want to remove "${anime.title}"?`;
-    document.getElementById('removeModal').style.display = "flex";
 }
 
 async function removeSingle(id) {
@@ -277,9 +344,10 @@ function loadRecommendations() {
     return displayRecommendations();
 }
 
-// Close modal if clicking the dark background
+// Close modals if clicking the dark background
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
+        closeOptionsModal();
         closeRemoveModal();
     }
 };

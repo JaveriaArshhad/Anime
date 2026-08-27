@@ -17,9 +17,11 @@
 
     <!-- Submission Form -->
     <div class="recommend-form">
-        <input type="text" id="userName" placeholder="Your Name">
+        <input type="text" id="userName" placeholder="Your Name (optional)">
         <input type="text" id="animeName" placeholder="Anime Title">
         <button id="addBtn">Search</button>
+        <!-- Honeypot: hidden from real visitors, but bots that auto-fill every field will trip it -->
+        <input type="text" id="website" name="website" style="display:none;" tabindex="-1" autocomplete="off">
     </div>
 
     <!-- Search results appear here — click a card to add it -->
@@ -28,6 +30,18 @@
 
     <!-- Container for all user lists -->
     <div id="usersContainer"></div>
+
+    <div id="optionsModal" class="modal">
+    <div class="modal-content">
+        <span class="closeBtn" onclick="closeOptionsModal()">&times;</span>
+        <h2 id="optionsTitle">Anime Options</h2>
+        <p id="wishlistStatusText" style="min-height: 1.2em; font-weight: 700;"></p>
+        <div class="modal-buttons-stacked">
+            <button id="addWishlistBtn" class="btn-yes">💖 Add to Wishlist</button>
+            <button id="requestDeleteBtn" class="btn-no">🗑️ Remove Recommendation</button>
+        </div>
+    </div>
+</div>
 
     <div id="removeModal" class="modal">
     <div class="modal-content">
