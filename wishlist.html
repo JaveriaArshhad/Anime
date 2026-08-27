@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Watchlist</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🍿 My Watchlist</h1>
+        <p>Anime I'm planning to watch!</p>
+    </header>
+
+    <div id="nav-placeholder"></div>
+
+
+    <section id="wishlistGrid" class="anime-grid">
+        <p id="emptyMessage" style="color: white; text-align: center; width: 100%;">Your watchlist is empty. Go to the Search page to find some anime!</p>
+    </section>
+
+    <div id="optionsModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeOptionsModal()">&times;</span>
+            <h2 id="optionsTitle">Anime Options</h2>
+            <div class="modal-buttons-stacked">
+                <button id="moveWatchedBtn" class="btn-action-purp">✨ Move to Watched</button>
+                <button id="requestDeleteBtn" class="btn-action-pink">🗑️ Remove from List</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="removeModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeRemoveModal()">&times;</span>
+            <h2>Are you sure?</h2>
+            <p id="removeText">This will permanently delete it.</p>
+            <div class="modal-buttons-horizontal">
+                <button id="confirmRemove" class="btn-yes">Yes, Delete</button>
+                <button id="cancelRemove" class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="categoryModal" class="modal">
+    <div class="modal-content">
+        <span class="closeBtn" onclick="closeCategoryModal()">&times;</span>
+        <h2>Select Category</h2>
+        <div id="categoryList" class="modal-buttons-stacked">
+            </div>
+        
+        <hr style="margin: 20px 0; border: 1px solid var(--accent); opacity: 0.3;">
+        
+        <div class="add-category-box">
+            <input type="text" id="newCategoryInput" placeholder="New Category Name...">
+            <button onclick="addNewCategory()" class="btn-yes" style="margin-top: 10px; width: 100%;">+ Add Category</button>
+        </div>
+    </div>
+</div>
+
+    <script src="wishlist.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

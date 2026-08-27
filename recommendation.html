@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Recommendations</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="recommendation.css">
+</head>
+<body>
+    <header>
+        <h1>Recommend Anime to Me!</h1>
+        <p>Type an anime you want me to watch. Each user gets their own list.</p>
+    </header>
+
+    <div id="nav-placeholder"></div>
+
+    <!-- Submission Form -->
+    <div class="recommend-form">
+        <input type="text" id="userName" placeholder="Your Name">
+        <input type="text" id="animeName" placeholder="Anime Title">
+        <button id="addBtn">Add</button>
+    </div>
+
+    <!-- Container for all user lists -->
+    <div id="usersContainer"></div>
+
+    <div id="optionsModal" class="modal">
+    <div class="modal-content">
+        <span class="closeBtn" onclick="closeOptionsModal()">&times;</span>
+        <h2 id="optionsTitle">Anime Options</h2>
+        <div class="modal-buttons-stacked">
+            <button id="addWishlistBtn" class="btn-yes">💖 Add to Wishlist</button>
+            <button id="requestDeleteBtn" class="btn-no">🗑️ Remove Recommendation</button>
+        </div>
+    </div>
+</div>
+
+<div id="removeModal" class="modal">
+    <div class="modal-content">
+        <span class="closeBtn" onclick="closeRemoveModal()">&times;</span>
+        <h2 style="font-size: 1.5rem;">Are you sure?</h2>
+        <p id="removeText">This will remove it from the suggestions.</p>
+        <div class="modal-buttons-horizontal">
+            <button id="confirmRemove" class="btn-yes">Yes, Remove</button>
+            <button id="cancelRemove" class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
+        </div>
+    </div>
+</div>
+
+    <script src="recommendation.js"></script>
+    <script src="main.js"></script>
+</body>
+</html>

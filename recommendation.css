@@ -1,0 +1,47 @@
+/* -------------------- Recommendation Cards -------------------- */
+
+/* Ensure the scroll container doesn't squash the cards */
+.scroll-container {
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    padding: 15px 20px;
+    scrollbar-width: thin;
+}
+
+/* Use the exact sizing from your main anime-card */
+.scroll-container .anime-card {
+    min-width: 200px; /* Fixed width for horizontal scrolling */
+    height: 300px;
+    flex-shrink: 0;
+}
+
+.user-category {
+    font-size: 1.5em;
+    font-weight: 700;
+    margin: 40px 20px 10px;
+    color: var(--highlight);
+    text-transform: capitalize;
+}
+
+/* -------------------- Reuse Modal Buttons -------------------- */
+/* (Ensure the Modal Button CSS we discussed previously is in style.css or here) */
+.modal-buttons-stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.modal-buttons-horizontal {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-yes, .btn-action-purp { background: linear-gradient(135deg, #a389d4, #bfa2db) !important; color: white; border-radius: 25px; border:none; padding: 12px; cursor: pointer; font-weight: bold; }
+.btn-no, .btn-action-pink { background: linear-gradient(135deg, #ffafcc, #ffc8dd) !important; color: white; border-radius: 25px; border:none; padding: 12px; cursor: pointer; font-weight: bold; }
+
+.modal-buttons-horizontal button { flex: 1; }
