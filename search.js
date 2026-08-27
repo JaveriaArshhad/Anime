@@ -2,38 +2,85 @@ const searchBtn = document.getElementById('searchBtn');
 const searchInput = document.getElementById('searchInput');
 const resultsContainer = document.getElementById('resultsContainer');
 
+const ANILIST_URL = 'https://graphql.anilist.co';
+
+const SEARCH_QUERY = `
+query ($search: String) {
+  Page(page: 1, perPage: 12) {
+    media(search: $search, type: ANIME, isAdult: false) {
+      title {
+        romaji
+        english
+      }
+      coverImage {
+        large
+      }
+      siteUrl
+    }
+  }
+}
+`;
+
 searchBtn.addEventListener('click', async () => {
     const query = searchInput.value.trim();
     if (!query) return;
     resultsContainer.innerHTML = "<p>Searching...</p>";
 
     try {
-        const response = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=12`);
-        const data = await response.json();
-        displayResults(data.data);
+        const response = await fetch(ANILIST_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                query: SEARCH_QUERY,
+                variables: { search: query },
+            }),
+        });
+
+        if (response.status === 429) {
+            resultsContainer.innerHTML = "<p>Slow down! The database needs a moment to breathe.</p>";
+            return;
+        }
+
+        if (response.status >= 500) {
+            resultsContainer.innerHTML = "<p>The anime database seems to be down right now. Please try again in a bit!</p>";
+            return;
+        }
+
+        const json = await response.json();
+        const results = json.data?.Page?.media || [];
+
+        if (results.length === 0) {
+            resultsContainer.innerHTML = "<p>No anime found. Try a different search.</p>";
+            return;
+        }
+
+        displayResults(results);
     } catch (error) {
-        resultsContainer.innerHTML = "<p>Error loading results.</p>";
+        resultsContainer.innerHTML = "<p>Error loading results. Check your internet connection.</p>";
     }
 });
 
 function displayResults(animeList) {
-    resultsContainer.innerHTML = ""; 
+    resultsContainer.innerHTML = "";
     animeList.forEach(anime => {
         const card = document.createElement('div');
         card.classList.add('anime-card', 'show-name');
 
-        // LOGIC CHANGE: Check if English title exists, otherwise use default
-        const properTitle = anime.title_english || anime.title;
+        const properTitle = anime.title.english || anime.title.romaji;
+        const image = anime.coverImage.large;
+        const link = anime.siteUrl;
 
         card.onclick = () => {
-            // Use properTitle here instead of anime.title
             if (confirm(`Add "${properTitle}" to wishlist?`)) {
-                addToWishlist(properTitle, anime.images.jpg.image_url, anime.url);
+                addToWishlist(properTitle, image, link);
             }
         };
 
         card.innerHTML = `
-            <img src="${anime.images.jpg.image_url}" alt="${properTitle}">
+            <img src="${image}" alt="${properTitle}">
             <div class="overlay"><a>${properTitle}</a></div>
         `;
         resultsContainer.appendChild(card);

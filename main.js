@@ -106,41 +106,47 @@ const animeCharacters = {
 };
 
 const modal = document.getElementById("animeModal");
-const title = document.getElementById("animeTitle");
-const characters = document.getElementById("animeCharacters");
-const closeBtn = document.querySelector(".closeBtn");
 
-document.querySelectorAll(".scroll-card img").forEach(img => {
-  img.addEventListener("click", function() {
-    const animeName = this.getAttribute("data-name");
-    const chars = animeCharacters[animeName];
+// This whole block is only relevant on watched.html, which is the only
+// page with #animeModal. Guarding it stops the script from throwing
+// errors on every other page (index, search, wishlist, recommendation, notcompleted).
+if (modal) {
+  const title = document.getElementById("animeTitle");
+  const characters = document.getElementById("animeCharacters");
+  const closeBtn = modal.querySelector(".closeBtn");
 
-    title.innerText = animeName;
-    characters.innerHTML = "";
+  document.querySelectorAll(".scroll-card img").forEach(img => {
+    img.addEventListener("click", function() {
+      const animeName = this.getAttribute("data-name");
+      const chars = animeCharacters[animeName];
 
-    if (!chars) {
-      characters.innerHTML = "<p>No characters found.</p>";
-    } else {
-      chars.forEach(c => {
-        characters.innerHTML += `
-          <div class="char-card">
-            <img src="${c.img}" alt="${c.name}">
-            <p>${c.name}</p>
-          </div>
-        `;
-      });
-    }
+      title.innerText = animeName;
+      characters.innerHTML = "";
 
-    modal.style.display = "flex";
+      if (!chars) {
+        characters.innerHTML = "<p>No characters found.</p>";
+      } else {
+        chars.forEach(c => {
+          characters.innerHTML += `
+            <div class="char-card">
+              <img src="${c.img}" alt="${c.name}">
+              <p>${c.name}</p>
+            </div>
+          `;
+        });
+      }
+
+      modal.style.display = "flex";
+    });
   });
-});
 
-closeBtn.addEventListener("click", () => {
-  modal.style.display = "none";
-});
-
-window.addEventListener("click", (e) => {
-  if (e.target == modal) {
+  closeBtn.addEventListener("click", () => {
     modal.style.display = "none";
-  }
-});
+  });
+
+  window.addEventListener("click", (e) => {
+    if (e.target == modal) {
+      modal.style.display = "none";
+    }
+  });
+}

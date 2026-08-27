@@ -9,6 +9,14 @@ let currentAnime = null;
 document.addEventListener("DOMContentLoaded", loadRecommendations);
 addBtn.addEventListener("click", addRecommendation);
 
+// Let users press Enter in either field instead of always clicking "Add"
+document.getElementById("userName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addRecommendation();
+});
+document.getElementById("animeName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addRecommendation();
+});
+
 // --- MODAL CONTROL FUNCTIONS ---
 
 function openOptionsModal(key, index, anime) {
@@ -52,6 +60,29 @@ document.getElementById('addWishlistBtn').onclick = () => {
 
 // --- CORE RECOMMENDATION LOGIC ---
 
+const ANILIST_URL = 'https://graphql.anilist.co';
+const MAX_RESULTS = 6;
+
+const SEARCH_QUERY = `
+query ($search: String) {
+  Page(page: 1, perPage: ${MAX_RESULTS}) {
+    media(search: $search, type: ANIME, isAdult: false) {
+      title {
+        romaji
+        english
+      }
+      coverImage {
+        large
+      }
+      siteUrl
+    }
+  }
+}
+`;
+
+const searchResultsBox = document.getElementById("searchResults");
+const searchHint = document.getElementById("searchHint");
+
 async function addRecommendation() {
     const rawUserName = document.getElementById("userName").value.trim();
     const animeName = document.getElementById("animeName").value.trim();
@@ -61,50 +92,105 @@ async function addRecommendation() {
         return;
     }
 
-    const userKey = rawUserName.toLowerCase();
+    searchResultsBox.innerHTML = "";
+    searchHint.textContent = "";
+
+    // Show a loading state so users know something is happening during the API call
+    const originalBtnText = addBtn.textContent;
+    addBtn.textContent = "Searching...";
+    addBtn.disabled = true;
 
     try {
-        const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(animeName)}&limit=1`);
+        const response = await fetch(ANILIST_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                query: SEARCH_QUERY,
+                variables: { search: animeName },
+            }),
+        });
 
         if (response.status === 429) {
-            alert("Slow down! The database needs a 1-second break.");
+            alert("Slow down! The database needs a moment to breathe.");
             return;
         }
 
-        const data = await response.json();
-
-        if (!data.data || data.data.length === 0) {
-            alert("Anime not found!");
+        if (response.status >= 500) {
+            alert("The anime database seems to be down right now. Please try again in a bit!");
             return;
         }
 
-        const anime = data.data[0];
-        const animeData = {
-            title: anime.title,
-            image: anime.images.jpg.image_url,
-            link: anime.url,
-        };
+        const json = await response.json();
+        const results = json.data?.Page?.media || [];
 
-        let allRecs = JSON.parse(localStorage.getItem("userRecommendations")) || {};
-
-        if (!allRecs[userKey] || Array.isArray(allRecs[userKey])) {
-            allRecs[userKey] = {
-                displayName: rawUserName,
-                list: [],
-            };
+        if (results.length === 0) {
+            searchHint.textContent = "No matches found. Try a different spelling!";
+            return;
         }
 
-        allRecs[userKey].list.push(animeData);
-        localStorage.setItem("userRecommendations", JSON.stringify(allRecs));
-
-        displayRecommendations();
-
-        document.getElementById("userName").value = "";
-        document.getElementById("animeName").value = "";
+        searchHint.textContent = "Which one did you mean? Click a card to add it.";
+        renderSearchResults(results, rawUserName);
     } catch (error) {
         console.error("Error details:", error);
         alert("Connection lost. Please check your internet!");
+    } finally {
+        addBtn.textContent = originalBtnText;
+        addBtn.disabled = false;
     }
+}
+
+function renderSearchResults(results, rawUserName) {
+    searchResultsBox.innerHTML = "";
+    results.forEach(anime => {
+        const title = anime.title.english || anime.title.romaji;
+        const card = document.createElement("div");
+        card.classList.add("anime-card");
+        card.innerHTML = `
+            <img src="${anime.coverImage.large}" alt="${title}">
+            <div class="overlay"><a>${title}</a></div>
+        `;
+        card.onclick = () => confirmAndAddRecommendation({
+            title,
+            image: anime.coverImage.large,
+            link: anime.siteUrl,
+        }, rawUserName);
+        searchResultsBox.appendChild(card);
+    });
+}
+
+function confirmAndAddRecommendation(animeData, rawUserName) {
+    const userKey = rawUserName.toLowerCase();
+    let allRecs = JSON.parse(localStorage.getItem("userRecommendations")) || {};
+
+    if (!allRecs[userKey] || Array.isArray(allRecs[userKey])) {
+        allRecs[userKey] = {
+            displayName: rawUserName,
+            list: [],
+        };
+    }
+
+    // Don't add the same anime twice to the same user's list
+    const alreadyAdded = allRecs[userKey].list.some(
+        item => item.title.toLowerCase() === animeData.title.toLowerCase()
+    );
+    if (alreadyAdded) {
+        alert(`${animeData.title} is already on ${rawUserName}'s list!`);
+        return;
+    }
+
+    allRecs[userKey].list.push(animeData);
+    localStorage.setItem("userRecommendations", JSON.stringify(allRecs));
+
+    displayRecommendations();
+
+    // Clear the search UI and the anime field, but keep the name filled in
+    // in case they want to add another anime for the same person right after
+    searchResultsBox.innerHTML = "";
+    searchHint.textContent = "";
+    document.getElementById("animeName").value = "";
 }
 
 function displayRecommendations() {
