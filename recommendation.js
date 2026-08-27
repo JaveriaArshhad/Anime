@@ -1,9 +1,11 @@
 const addBtn = document.getElementById("addBtn");
 const usersContainer = document.getElementById("usersContainer");
 
+// This is the Netlify Function acting as our backend API
+const API_URL = "/.netlify/functions/recommendations";
+
 // Variables to keep track of what we are currently clicking on
-let currentKey = null;
-let currentIndex = null;
+let currentId = null;
 let currentAnime = null;
 
 document.addEventListener("DOMContentLoaded", loadRecommendations);
@@ -19,9 +21,8 @@ document.getElementById("animeName").addEventListener("keydown", (e) => {
 
 // --- MODAL CONTROL FUNCTIONS ---
 
-function openOptionsModal(key, index, anime) {
-    currentKey = key;
-    currentIndex = index;
+function openOptionsModal(id, anime) {
+    currentId = id;
     currentAnime = anime;
     document.getElementById('optionsTitle').innerText = anime.title;
     document.getElementById('optionsModal').style.display = "flex";
@@ -44,16 +45,16 @@ document.getElementById('requestDeleteBtn').onclick = () => {
 
 // When "Yes, Remove" is clicked in the SECOND (horizontal) modal
 document.getElementById('confirmRemove').onclick = () => {
-    removeSingle(currentKey, currentIndex);
+    removeSingle(currentId);
     closeRemoveModal();
 };
 
-// Bonus: Add to Wishlist logic for the first modal
+// Bonus: Add to Wishlist logic for the first modal (wishlist still uses localStorage for now)
 document.getElementById('addWishlistBtn').onclick = () => {
     let wishlist = JSON.parse(localStorage.getItem("myWishlist")) || [];
     wishlist.push(currentAnime);
     localStorage.setItem("myWishlist", JSON.stringify(wishlist));
-    
+
     alert(`✨ ${currentAnime.title} added to your wishlist!`);
     closeOptionsModal();
 };
@@ -161,62 +162,100 @@ function renderSearchResults(results, rawUserName) {
     });
 }
 
-function confirmAndAddRecommendation(animeData, rawUserName) {
-    const userKey = rawUserName.toLowerCase();
-    let allRecs = JSON.parse(localStorage.getItem("userRecommendations")) || {};
+// Sends the pick to the shared backend so everyone can see it
+async function confirmAndAddRecommendation(animeData, rawUserName) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userName: rawUserName,
+                animeTitle: animeData.title,
+                animeImage: animeData.image,
+                animeLink: animeData.link,
+            }),
+        });
 
-    if (!allRecs[userKey] || Array.isArray(allRecs[userKey])) {
-        allRecs[userKey] = {
-            displayName: rawUserName,
-            list: [],
-        };
+        if (response.status === 409) {
+            alert(`${animeData.title} is already on ${rawUserName}'s list!`);
+            return;
+        }
+
+        if (!response.ok) {
+            alert("Couldn't save that recommendation. Please try again.");
+            return;
+        }
+
+        await loadRecommendations();
+
+        // Clear the search UI and the anime field, but keep the name filled in
+        // in case they want to add another anime for the same person right after
+        searchResultsBox.innerHTML = "";
+        searchHint.textContent = "";
+        document.getElementById("animeName").value = "";
+    } catch (error) {
+        console.error("Error saving recommendation:", error);
+        alert("Connection lost. Please check your internet!");
     }
+}
 
-    // Don't add the same anime twice to the same user's list
-    const alreadyAdded = allRecs[userKey].list.some(
-        item => item.title.toLowerCase() === animeData.title.toLowerCase()
-    );
-    if (alreadyAdded) {
-        alert(`${animeData.title} is already on ${rawUserName}'s list!`);
+// Pulls every recommendation from the shared database and groups it by person
+async function displayRecommendations() {
+    usersContainer.innerHTML = "<p style='text-align:center; color:#999;'>Loading recommendations...</p>";
+
+    let allRows = [];
+    try {
+        const response = await fetch(API_URL);
+        if (!response.ok) throw new Error("Failed to fetch");
+        allRows = await response.json();
+    } catch (error) {
+        console.error("Error loading recommendations:", error);
+        usersContainer.innerHTML = "<p style='text-align:center; color:#999;'>Couldn't load recommendations right now. Try refreshing the page.</p>";
         return;
     }
 
-    allRecs[userKey].list.push(animeData);
-    localStorage.setItem("userRecommendations", JSON.stringify(allRecs));
-
-    displayRecommendations();
-
-    // Clear the search UI and the anime field, but keep the name filled in
-    // in case they want to add another anime for the same person right after
-    searchResultsBox.innerHTML = "";
-    searchHint.textContent = "";
-    document.getElementById("animeName").value = "";
-}
-
-function displayRecommendations() {
     usersContainer.innerHTML = "";
-    const allRecs = JSON.parse(localStorage.getItem("userRecommendations")) || {};
 
-    for (const key in allRecs) {
-        const userData = allRecs[key];
-        if (!userData.list || userData.list.length === 0) continue;
+    if (allRows.length === 0) {
+        usersContainer.innerHTML = "<p style='text-align:center; color:#999;'>No recommendations yet — be the first!</p>";
+        return;
+    }
+
+    // Group the flat list of rows by user_name
+    const grouped = {};
+    allRows.forEach(row => {
+        const key = row.user_name.toLowerCase();
+        if (!grouped[key]) {
+            grouped[key] = { displayName: row.user_name, list: [] };
+        }
+        grouped[key].list.push({
+            id: row.id,
+            title: row.anime_title,
+            image: row.anime_image,
+            link: row.anime_link,
+        });
+    });
+
+    for (const key in grouped) {
+        const userData = grouped[key];
 
         const categoryTitle = document.createElement("div");
         categoryTitle.classList.add("user-category");
         categoryTitle.textContent = userData.displayName;
-        categoryTitle.addEventListener("dblclick", () => deleteUser(key));
+        categoryTitle.title = "Double-click to delete this person's entire list";
+        categoryTitle.addEventListener("dblclick", () => deleteUser(userData));
         usersContainer.appendChild(categoryTitle);
 
         const userDiv = document.createElement("div");
         userDiv.classList.add("scroll-container");
         usersContainer.appendChild(userDiv);
 
-        userData.list.forEach((anime, index) => {
+        userData.list.forEach(anime => {
             const card = document.createElement("div");
-            card.classList.add("anime-card"); // Now matches your other pages
+            card.classList.add("anime-card");
 
             // Clicking the card opens the options stack
-            card.onclick = () => openOptionsModal(key, index, anime);
+            card.onclick = () => openOptionsModal(anime.id, anime);
 
             card.innerHTML = `
                 <img src="${anime.image}" alt="${anime.title}">
@@ -229,25 +268,48 @@ function displayRecommendations() {
     }
 }
 
-function removeSingle(key, index) {
-    let allRecs = JSON.parse(localStorage.getItem("userRecommendations"));
-    allRecs[key].list.splice(index, 1);
-    if (allRecs[key].list.length === 0) delete allRecs[key];
-    localStorage.setItem("userRecommendations", JSON.stringify(allRecs));
-    displayRecommendations();
+async function removeSingle(id) {
+    try {
+        const response = await fetch(API_URL, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+        });
+
+        if (!response.ok) {
+            alert("Couldn't remove that recommendation. Please try again.");
+            return;
+        }
+
+        displayRecommendations();
+    } catch (error) {
+        console.error("Error removing recommendation:", error);
+        alert("Connection lost. Please check your internet!");
+    }
 }
 
-function deleteUser(key) {
-    if (confirm(`Delete this user's entire list?`)) {
-        let allRecs = JSON.parse(localStorage.getItem("userRecommendations"));
-        delete allRecs[key];
-        localStorage.setItem("userRecommendations", JSON.stringify(allRecs));
+async function deleteUser(userData) {
+    if (!confirm(`Delete ${userData.displayName}'s entire list?`)) return;
+
+    try {
+        await Promise.all(
+            userData.list.map(anime =>
+                fetch(API_URL, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: anime.id }),
+                })
+            )
+        );
         displayRecommendations();
+    } catch (error) {
+        console.error("Error deleting user's list:", error);
+        alert("Something went wrong while deleting. Please try again.");
     }
 }
 
 function loadRecommendations() {
-    displayRecommendations();
+    return displayRecommendations();
 }
 
 // Close modals if clicking the dark background
