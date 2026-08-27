@@ -18,13 +18,14 @@ function loadNavbar() {
     `;
 
     navPlaceholder.innerHTML = navHTML;
+    injectAdminModal();
 
     document.getElementById("adminNavLink").addEventListener("click", (e) => {
         e.preventDefault();
         if (isAdmin()) {
             logoutAdmin();
         } else {
-            promptAdminLogin();
+            openAdminModal();
         }
     });
 }
@@ -38,9 +39,59 @@ function isAdmin() {
     return sessionStorage.getItem("adminPasscode") !== null;
 }
 
-async function promptAdminLogin() {
-    const passcode = prompt("Enter admin passcode:");
-    if (!passcode) return;
+// Injects the styled login modal into the page once, reusing the
+// site's existing .modal / .modal-content / button styling.
+function injectAdminModal() {
+    if (document.getElementById("adminModal")) return; // already injected
+
+    const modalHTML = `
+        <div id="adminModal" class="modal">
+            <div class="modal-content">
+                <span class="closeBtn" onclick="closeAdminModal()">&times;</span>
+                <h2>🔒 Admin Login</h2>
+                <p id="adminErrorText" style="color:#e06c8a; font-weight:700; min-height: 1.2em;"></p>
+                <div class="add-category-box">
+                    <input type="password" id="adminPasscodeInput" placeholder="Enter passcode">
+                    <button id="adminSubmitBtn" class="btn-yes" style="width:100%;">Unlock</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+
+    const input = document.getElementById("adminPasscodeInput");
+    document.getElementById("adminSubmitBtn").addEventListener("click", submitAdminLogin);
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitAdminLogin();
+    });
+}
+
+function openAdminModal() {
+    document.getElementById("adminErrorText").textContent = "";
+    document.getElementById("adminPasscodeInput").value = "";
+    document.getElementById("adminModal").style.display = "flex";
+    document.getElementById("adminPasscodeInput").focus();
+}
+
+function closeAdminModal() {
+    document.getElementById("adminModal").style.display = "none";
+}
+
+async function submitAdminLogin() {
+    const passcode = document.getElementById("adminPasscodeInput").value;
+    const errorText = document.getElementById("adminErrorText");
+    const submitBtn = document.getElementById("adminSubmitBtn");
+
+    if (!passcode) {
+        errorText.textContent = "Please enter a passcode.";
+        return;
+    }
+
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = "Checking...";
+    submitBtn.disabled = true;
+    errorText.textContent = "";
 
     try {
         const response = await fetch("/.netlify/functions/admin-login", {
@@ -51,22 +102,31 @@ async function promptAdminLogin() {
 
         if (response.ok) {
             sessionStorage.setItem("adminPasscode", passcode);
-            alert("Admin mode unlocked!");
+            closeAdminModal();
             location.reload();
         } else {
-            alert("Incorrect passcode.");
+            errorText.textContent = "Incorrect passcode. Try again.";
         }
     } catch (error) {
         console.error("Admin login error:", error);
-        alert("Couldn't reach the server. Please try again.");
+        errorText.textContent = "Couldn't reach the server. Please try again.";
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
     }
 }
 
 function logoutAdmin() {
     sessionStorage.removeItem("adminPasscode");
-    alert("Logged out of admin mode.");
     location.reload();
 }
+
+// Close the admin modal if clicking the dark background
+window.addEventListener("click", (e) => {
+    if (e.target.id === "adminModal") {
+        closeAdminModal();
+    }
+});
 
 // Run the function when the page loads
 loadNavbar();
