@@ -9,9 +9,7 @@ body {
     margin: 0;
     padding: 2rem;
     font-family: 'Nunito', sans-serif;
-    background-image: url('picture/pinkwallpaper.jpg');
-    background-size: cover;
-    background-attachment: fixed;
+    background: #ffffff;
     color: #333;
     min-height: 100vh;
 }
