@@ -83,10 +83,18 @@ exports.handler = async (event) => {
             };
         }
 
-        // ---- DELETE: remove a single recommendation by id ----
+        // ---- DELETE: remove a single recommendation by id (admin only) ----
         if (event.httpMethod === 'DELETE') {
             const body = JSON.parse(event.body || '{}');
-            const { id } = body;
+            const { id, passcode } = body;
+
+            if (!process.env.ADMIN_PASSCODE || passcode !== process.env.ADMIN_PASSCODE) {
+                return {
+                    statusCode: 403,
+                    headers,
+                    body: JSON.stringify({ error: 'Not authorized' }),
+                };
+            }
 
             if (!id) {
                 return {

@@ -4,19 +4,68 @@ function loadNavbar() {
 
     // Get the current file name (e.g., index.html)
     const currentPage = window.location.pathname.split("/").pop() || "index.html";
+    const adminLabel = isAdmin() ? "Logout" : "Admin";
 
     const navHTML = `
         <nav>
             <a href="index.html" class="${currentPage === 'index.html' ? 'active' : ''}">Home</a>
             <a href="watched.html" class="${currentPage === 'watched.html' ? 'active' : ''}">Watched</a>
             <a href="notcompleted.html" class="${currentPage === 'notcompleted.html' ? 'active' : ''}">Not Completed</a>
-            <a href="wishlist.html" class="${currentPage === 'wishlist.html' ? 'active' : ''}">Watchlist</a>
             <a href="recommendation.html" class="${currentPage === 'recommendation.html' ? 'active' : ''}">Recommendation</a>
             <a href="search.html" class="${currentPage === 'search.html' ? 'active' : ''}">Search</a>
+            <a href="#" id="adminNavLink">${adminLabel}</a>
         </nav>
     `;
 
     navPlaceholder.innerHTML = navHTML;
+
+    document.getElementById("adminNavLink").addEventListener("click", (e) => {
+        e.preventDefault();
+        if (isAdmin()) {
+            logoutAdmin();
+        } else {
+            promptAdminLogin();
+        }
+    });
+}
+
+// --- ADMIN MODE ---
+// Visitors never see admin-only controls; only someone who enters the
+// correct passcode (checked against the server) gets them, for this
+// browser session only.
+
+function isAdmin() {
+    return sessionStorage.getItem("adminPasscode") !== null;
+}
+
+async function promptAdminLogin() {
+    const passcode = prompt("Enter admin passcode:");
+    if (!passcode) return;
+
+    try {
+        const response = await fetch("/.netlify/functions/admin-login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ passcode }),
+        });
+
+        if (response.ok) {
+            sessionStorage.setItem("adminPasscode", passcode);
+            alert("Admin mode unlocked!");
+            location.reload();
+        } else {
+            alert("Incorrect passcode.");
+        }
+    } catch (error) {
+        console.error("Admin login error:", error);
+        alert("Couldn't reach the server. Please try again.");
+    }
+}
+
+function logoutAdmin() {
+    sessionStorage.removeItem("adminPasscode");
+    alert("Logged out of admin mode.");
+    location.reload();
 }
 
 // Run the function when the page loads

@@ -4,7 +4,6 @@ const usersContainer = document.getElementById("usersContainer");
 // This is the Netlify Function acting as our backend API
 const API_URL = "/.netlify/functions/recommendations";
 
-// Variables to keep track of what we are currently clicking on
 let currentId = null;
 let currentAnime = null;
 
@@ -19,44 +18,15 @@ document.getElementById("animeName").addEventListener("keydown", (e) => {
     if (e.key === "Enter") addRecommendation();
 });
 
-// --- MODAL CONTROL FUNCTIONS ---
-
-function openOptionsModal(id, anime) {
-    currentId = id;
-    currentAnime = anime;
-    document.getElementById('optionsTitle').innerText = anime.title;
-    document.getElementById('optionsModal').style.display = "flex";
-}
-
-function closeOptionsModal() {
-    document.getElementById('optionsModal').style.display = "none";
-}
+// --- MODAL CONTROL (admin-only: confirming a delete) ---
 
 function closeRemoveModal() {
     document.getElementById('removeModal').style.display = "none";
 }
 
-// When "Remove" is clicked in the FIRST (stacked) modal
-document.getElementById('requestDeleteBtn').onclick = () => {
-    closeOptionsModal();
-    document.getElementById('removeText').innerText = `Are you sure you want to remove "${currentAnime.title}"?`;
-    document.getElementById('removeModal').style.display = "flex";
-};
-
-// When "Yes, Remove" is clicked in the SECOND (horizontal) modal
 document.getElementById('confirmRemove').onclick = () => {
     removeSingle(currentId);
     closeRemoveModal();
-};
-
-// Bonus: Add to Wishlist logic for the first modal (wishlist still uses localStorage for now)
-document.getElementById('addWishlistBtn').onclick = () => {
-    let wishlist = JSON.parse(localStorage.getItem("myWishlist")) || [];
-    wishlist.push(currentAnime);
-    localStorage.setItem("myWishlist", JSON.stringify(wishlist));
-
-    alert(`✨ ${currentAnime.title} added to your wishlist!`);
-    closeOptionsModal();
 };
 
 // --- CORE RECOMMENDATION LOGIC ---
@@ -96,7 +66,6 @@ async function addRecommendation() {
     searchResultsBox.innerHTML = "";
     searchHint.textContent = "";
 
-    // Show a loading state so users know something is happening during the API call
     const originalBtnText = addBtn.textContent;
     addBtn.textContent = "Searching...";
     addBtn.disabled = true;
@@ -162,7 +131,7 @@ function renderSearchResults(results, rawUserName) {
     });
 }
 
-// Sends the pick to the shared backend so everyone can see it
+// Anyone can do this — no passcode needed to add
 async function confirmAndAddRecommendation(animeData, rawUserName) {
     try {
         const response = await fetch(API_URL, {
@@ -188,8 +157,6 @@ async function confirmAndAddRecommendation(animeData, rawUserName) {
 
         await loadRecommendations();
 
-        // Clear the search UI and the anime field, but keep the name filled in
-        // in case they want to add another anime for the same person right after
         searchResultsBox.innerHTML = "";
         searchHint.textContent = "";
         document.getElementById("animeName").value = "";
@@ -221,7 +188,6 @@ async function displayRecommendations() {
         return;
     }
 
-    // Group the flat list of rows by user_name
     const grouped = {};
     allRows.forEach(row => {
         const key = row.user_name.toLowerCase();
@@ -236,14 +202,14 @@ async function displayRecommendations() {
         });
     });
 
+    const adminMode = isAdmin(); // from main.js
+
     for (const key in grouped) {
         const userData = grouped[key];
 
         const categoryTitle = document.createElement("div");
         categoryTitle.classList.add("user-category");
         categoryTitle.textContent = userData.displayName;
-        categoryTitle.title = "Double-click to delete this person's entire list";
-        categoryTitle.addEventListener("dblclick", () => deleteUser(userData));
         usersContainer.appendChild(categoryTitle);
 
         const userDiv = document.createElement("div");
@@ -254,8 +220,13 @@ async function displayRecommendations() {
             const card = document.createElement("div");
             card.classList.add("anime-card");
 
-            // Clicking the card opens the options stack
-            card.onclick = () => openOptionsModal(anime.id, anime);
+            // Only admins can click a card to delete it — everyone else just views
+            if (adminMode) {
+                card.style.cursor = "pointer";
+                card.onclick = () => requestDelete(anime);
+            } else {
+                card.style.cursor = "default";
+            }
 
             card.innerHTML = `
                 <img src="${anime.image}" alt="${anime.title}">
@@ -268,13 +239,27 @@ async function displayRecommendations() {
     }
 }
 
+function requestDelete(anime) {
+    currentId = anime.id;
+    currentAnime = anime;
+    document.getElementById('removeText').innerText = `Are you sure you want to remove "${anime.title}"?`;
+    document.getElementById('removeModal').style.display = "flex";
+}
+
 async function removeSingle(id) {
+    const passcode = sessionStorage.getItem("adminPasscode");
+
     try {
         const response = await fetch(API_URL, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id }),
+            body: JSON.stringify({ id, passcode }),
         });
+
+        if (response.status === 403) {
+            alert("Your admin session isn't valid. Please log in again.");
+            return;
+        }
 
         if (!response.ok) {
             alert("Couldn't remove that recommendation. Please try again.");
@@ -288,34 +273,13 @@ async function removeSingle(id) {
     }
 }
 
-async function deleteUser(userData) {
-    if (!confirm(`Delete ${userData.displayName}'s entire list?`)) return;
-
-    try {
-        await Promise.all(
-            userData.list.map(anime =>
-                fetch(API_URL, {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: anime.id }),
-                })
-            )
-        );
-        displayRecommendations();
-    } catch (error) {
-        console.error("Error deleting user's list:", error);
-        alert("Something went wrong while deleting. Please try again.");
-    }
-}
-
 function loadRecommendations() {
     return displayRecommendations();
 }
 
-// Close modals if clicking the dark background
+// Close modal if clicking the dark background
 window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
-        closeOptionsModal();
         closeRemoveModal();
     }
 };

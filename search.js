@@ -73,10 +73,9 @@ function displayResults(animeList) {
         const image = anime.coverImage.large;
         const link = anime.siteUrl;
 
+        // Wishlist is on hold for now, so clicking just opens the anime's AniList page
         card.onclick = () => {
-            if (confirm(`Add "${properTitle}" to wishlist?`)) {
-                addToWishlist(properTitle, image, link);
-            }
+            if (link) window.open(link, '_blank');
         };
 
         card.innerHTML = `
@@ -85,12 +84,4 @@ function displayResults(animeList) {
         `;
         resultsContainer.appendChild(card);
     });
-}
-
-function addToWishlist(title, image, link) {
-    let wishlist = JSON.parse(localStorage.getItem('myWishlist')) || [];
-    if (wishlist.some(item => item.title === title)) return alert("Already added!");
-    wishlist.push({ title, image, link });
-    localStorage.setItem('myWishlist', JSON.stringify(wishlist));
-    alert("Added!");
 }
