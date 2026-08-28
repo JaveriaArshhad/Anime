@@ -14,33 +14,44 @@
 
     <div id="nav-placeholder"></div>
 
-    <section class="anime-grid">
-        <div class="anime-card">
-            <img src="image/snafu.jpg" alt="My Teen Romantic Comedy SNAFU">
-            <div class="overlay"><a href="https://www.crunchyroll.com/my-teen-romantic-comedy-snafu" target="_blank">My Teen Romantic Comedy SNAFU</a></div>
+    <!-- Admin-only: search to add a new item -->
+    <div id="adminAddBox" style="display:none;">
+        <div class="recommend-form" style="max-width: 500px; margin: 20px auto;">
+            <input type="text" id="ncSearchInput" placeholder="Search an anime you haven't finished...">
+            <button id="ncSearchBtn">Search</button>
         </div>
-        <div class="anime-card">
-            <img src="image/whiskeraway.jpg" alt="A Whisker Away">
-            <div class="overlay"><a href="https://www.crunchyroll.com/a-whisker-away" target="_blank">A Whisker Away</a></div>
+        <p id="ncSearchHint" class="search-hint"></p>
+        <div id="ncSearchResults" class="scroll-container"></div>
+    </div>
+
+    <section id="notcompletedGrid" class="anime-grid"></section>
+
+    <!-- Reason input (admin only, shown after picking a search result) -->
+    <div id="reasonModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeReasonModal()">&times;</span>
+            <h2 id="reasonTitle">Why didn't you finish it?</h2>
+            <div class="add-category-box">
+                <input type="text" id="reasonInput" placeholder="e.g. Watched till ep 5, wasn't fun">
+                <button onclick="confirmAdd()" class="btn-yes" style="width:100%;">Add</button>
+            </div>
         </div>
-        <div class="anime-card">
-            <img src="image/jjk.jpg" alt="Jujutsu Kaisen">
-            <div class="overlay"><a href="https://www.crunchyroll.com/jujutsu-kaisen" target="_blank">Jujutsu Kaisen</a></div>
+    </div>
+
+    <!-- Delete confirmation (admin only) -->
+    <div id="removeModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeRemoveModal()">&times;</span>
+            <h2>Are you sure?</h2>
+            <p id="removeText">This will permanently delete it.</p>
+            <div class="modal-buttons-horizontal">
+                <button id="confirmRemove" class="btn-yes">Yes, Delete</button>
+                <button class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
+            </div>
         </div>
-        <div class="anime-card">
-            <img src="image/fragrantflower.jpg" alt="The Fragrant Flower Blooms with Dignity">
-            <div class="overlay"><a href="https://www.crunchyroll.com/the-fragrant-flower-blooms-with-dignity" target="_blank">The Fragrant Flower Blooms with Dignity</a></div>
-        </div>
-        <div class="anime-card">
-            <img src="image/attackontitan.jpg" alt="Attack on Titan">
-            <div class="overlay"><a href="https://www.crunchyroll.com/series/GR751KNZY/attack-on-titan?srsltid=AfmBOopHYleIp1c1U_guzDE05cIi34LFAv4JWIqgd2xT-_dGROscd6GS" target="_blank">Attack on Titan</a></div>
-        </div>
-        <div class="anime-card">
-            <img src="image/chainsawman.jpg" alt="Chainsawman">
-            <div class="overlay"><a href="" target="_blank">Chainsaw man</a></div>
-        </div>
-    
-    </section>
+    </div>
+
+    <script src="notcompleted.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

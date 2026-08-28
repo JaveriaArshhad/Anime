@@ -1,20 +1,12 @@
 const mysql = require('mysql2/promise');
 
-// Reuse the connection across warm invocations when possible
-let pool;
-function getPool() {
-    if (!pool) {
-        pool = mysql.createPool({
-            host: process.env.DB_HOST,
-            user: process.env.DB_USER,
-            password: process.env.DB_PASSWORD,
-            database: process.env.DB_NAME,
-            waitForConnections: true,
-            connectionLimit: 3,
-            queueLimit: 0,
-        });
-    }
-    return pool;
+async function getConnection() {
+    return mysql.createConnection({
+        host: process.env.DB_HOST,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+    });
 }
 
 exports.handler = async (event) => {
@@ -29,9 +21,11 @@ exports.handler = async (event) => {
         return { statusCode: 204, headers, body: '' };
     }
 
-    const db = getPool();
+    let db;
 
     try {
+        db = await getConnection();
+
         // ---- GET: return every recommendation, grouped isn't needed here;
         // the frontend groups them by user_name itself ----
         if (event.httpMethod === 'GET') {
@@ -48,13 +42,47 @@ exports.handler = async (event) => {
         // ---- POST: add a new recommendation ----
         if (event.httpMethod === 'POST') {
             const body = JSON.parse(event.body || '{}');
-            const { userName, animeTitle, animeImage, animeLink } = body;
+            const { userName, animeTitle, animeImage, animeLink, website } = body;
+
+            // Honeypot: real users never see or fill this field. A bot that
+            // fills every field in the form will trip this, so we quietly
+            // pretend it succeeded without actually writing anything.
+            if (website) {
+                return { statusCode: 201, headers, body: JSON.stringify({ id: 0 }) };
+            }
 
             if (!userName || !animeTitle) {
                 return {
                     statusCode: 400,
                     headers,
                     body: JSON.stringify({ error: 'userName and animeTitle are required' }),
+                };
+            }
+
+            if (userName.length > 100 || animeTitle.length > 255) {
+                return {
+                    statusCode: 400,
+                    headers,
+                    body: JSON.stringify({ error: 'Input too long' }),
+                };
+            }
+
+            // Basic rate limiting: this is the only endpoint anyone can write
+            // to without a passcode, so cap how fast one visitor can post.
+            const ip = event.headers['x-nf-client-connection-ip']
+                || event.headers['client-ip']
+                || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
+                || 'unknown';
+
+            const [recent] = await db.query(
+                'SELECT COUNT(*) AS count FROM recommendations WHERE ip_address = ? AND created_at > (NOW() - INTERVAL 10 MINUTE)',
+                [ip]
+            );
+            if (recent[0].count >= 5) {
+                return {
+                    statusCode: 429,
+                    headers,
+                    body: JSON.stringify({ error: 'Too many recommendations too fast. Please wait a bit.' }),
                 };
             }
 
@@ -72,8 +100,8 @@ exports.handler = async (event) => {
             }
 
             const [result] = await db.query(
-                'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link) VALUES (?, ?, ?, ?)',
-                [userName, animeTitle, animeImage || null, animeLink || null]
+                'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link, ip_address) VALUES (?, ?, ?, ?, ?)',
+                [userName, animeTitle, animeImage || null, animeLink || null, ip]
             );
 
             return {
@@ -125,5 +153,7 @@ exports.handler = async (event) => {
             headers,
             body: JSON.stringify({ error: 'Something went wrong on the server.' }),
         };
+    } finally {
+        if (db) await db.end();
     }
 };

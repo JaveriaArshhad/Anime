@@ -158,6 +158,36 @@ nav a:hover, nav a.active {
     box-sizing: border-box;
 }
 
+/* -------------------- Not Completed: card + note badge -------------------- */
+.notcompleted-item {
+    position: relative;
+    width: 200px;
+}
+
+.drop-note {
+    position: absolute;
+    bottom: 36px;
+    right: 8px;
+    width: fit-content;
+    max-width: 65%;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    line-height: 1.3;
+    background: rgba(163, 137, 212, 0.85);
+    border-radius: 14px;
+    padding: 6px 10px;
+    z-index: 5;
+}
+
+@media screen and (max-width: 768px) {
+    .notcompleted-item { width: 160px; }
+}
+@media screen and (max-width: 480px) {
+    .notcompleted-item { width: 130px; }
+}
+
 .anime-card {
     position: relative;
     width: 200px;
@@ -280,7 +310,8 @@ nav a:hover, nav a.active {
 
 /* 2. Base Button Styles */
 .modal-buttons-stacked button, 
-.modal-buttons-horizontal button {
+.modal-buttons-horizontal button,
+.add-category-box button {
     border: 2px solid rgba(255, 255, 255, 0.3);
     padding: 14px 20px;
     border-radius: 25px;

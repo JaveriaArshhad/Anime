@@ -14,21 +14,17 @@
 
     <div id="nav-placeholder"></div>
 
-
-    <section id="wishlistGrid" class="anime-grid">
-        <p id="emptyMessage" style="color: white; text-align: center; width: 100%;">Your watchlist is empty. Go to the Search page to find some anime!</p>
-    </section>
-
-    <div id="optionsModal" class="modal">
-        <div class="modal-content">
-            <span class="closeBtn" onclick="closeOptionsModal()">&times;</span>
-            <h2 id="optionsTitle">Anime Options</h2>
-            <div class="modal-buttons-stacked">
-                <button id="moveWatchedBtn" class="btn-action-purp">✨ Move to Watched</button>
-                <button id="requestDeleteBtn" class="btn-action-pink">🗑️ Remove from List</button>
-            </div>
+    <!-- Admin-only: search to add a new item directly -->
+    <div id="adminAddBox" style="display:none;">
+        <div class="recommend-form" style="max-width: 500px; margin: 20px auto;">
+            <input type="text" id="wishlistSearchInput" placeholder="Search an anime to add...">
+            <button id="wishlistSearchBtn">Search</button>
         </div>
+        <p id="wishlistSearchHint" class="search-hint"></p>
+        <div id="wishlistSearchResults" class="scroll-container"></div>
     </div>
+
+    <section id="wishlistGrid" class="anime-grid"></section>
 
     <div id="removeModal" class="modal">
         <div class="modal-content">
@@ -41,22 +37,6 @@
             </div>
         </div>
     </div>
-
-    <div id="categoryModal" class="modal">
-    <div class="modal-content">
-        <span class="closeBtn" onclick="closeCategoryModal()">&times;</span>
-        <h2>Select Category</h2>
-        <div id="categoryList" class="modal-buttons-stacked">
-            </div>
-        
-        <hr style="margin: 20px 0; border: 1px solid var(--accent); opacity: 0.3;">
-        
-        <div class="add-category-box">
-            <input type="text" id="newCategoryInput" placeholder="New Category Name...">
-            <button onclick="addNewCategory()" class="btn-yes" style="margin-top: 10px; width: 100%;">+ Add Category</button>
-        </div>
-    </div>
-</div>
 
     <script src="wishlist.js"></script>
     <script src="main.js"></script>

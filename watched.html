@@ -14,94 +14,19 @@
 
     <div id="nav-placeholder"></div>
 
-    <!-- -------------------- Movies Category -------------------- -->
-    <div class="category">Movies</div>
-    <div class="scroll-container">
-        <div class="scroll-card">
-            <img src="image/yourname.jpg" alt="Your Name" data-name="Your Name">
-            <div class="overlay"><a href="https://hianime.to/your-name-10" target="_blank">Your Name</a></div>
+    <!-- Admin-only: search to add a newly watched anime -->
+    <div id="adminAddBox" style="display:none;">
+        <div class="recommend-form" style="max-width: 500px; margin: 20px auto;">
+            <input type="text" id="watchedSearchInput" placeholder="Search an anime you watched...">
+            <button id="watchedSearchBtn">Search</button>
         </div>
-
-        <div class="scroll-card">
-            <img src="image/iwanttoeatyourpancreas.jpg" alt="I Want to Eat Your Pancreas" data-name="I Want to Eat Your Pancreas">
-            <div class="overlay"><a href="https://hianime.to/i-want-to-eat-your-pancreas-70" target="_blank">I Want to Eat Your Pancreas</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/gardenofwords.jpg" alt="The Garden of Words" data-name="The Garden of Words">
-            <div class="overlay"><a href="https://hianime.to/the-garden-of-words-414" target="_blank">The Garden of Words</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/tunneltosummer.jpg" alt="The Tunnel to Summer" data-name="The Tunnel to Summer">
-            <div class="overlay"><a href="https://hianime.to/the-tunnel-to-summer-the-exit-of-goodbye-18393" target="_blank">The Tunnel to Summer</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/silent voice.jpg" alt="A Silent Voice" data-name="A Silent Voice">
-            <div class="overlay"><a href="https://hianime.to/a-silent-voice-11" target="_blank">A Silent Voice</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/weathering with you.jpg" alt="Weathering With You" data-name="Weathering With You">
-            <div class="overlay"><a href="https://hianime.to/weathering-with-you-111" target="_blank">Weathering With You</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/suzume.jpg" alt="Suzume" data-name="Suzume">
-            <div class="overlay"><a href="https://hianime.to/suzumes-doorlocking-18190" target="_blank">Suzume</a></div>
-        </div>
+        <p id="watchedSearchHint" class="search-hint"></p>
+        <div id="watchedSearchResults" class="scroll-container"></div>
     </div>
 
-    <!-- -------------------- Romance Category -------------------- -->
-    <div class="category">Romance (Series)</div>
-    <div class="scroll-container">
-        <div class="scroll-card">
-            <img src="image/mydressupdarling.jpg" alt="My Dress-Up Darling" data-name="My Dress-Up Darling">
-            <div class="overlay"><a href="https://hianime.to/my-dress-up-darling-17930" target="_blank">My Dress-Up Darling</a></div>
-        </div>
+    <div id="watchedContainer"></div>
 
-        <div class="scroll-card">
-            <img src="image/spyxfam.jpg" alt="Spy x Family" data-name="Spy x Family">
-            <div class="overlay"><a href="https://hianime.to/spy-x-family-17977" target="_blank">Spy x Family</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/nana.jpg" alt="Nana" data-name="Nana">
-            <div class="overlay"><a href="https://hianime.to/nana-2006-118" target="_blank">Nana</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/promisedneverland.jpg" alt="The Promised Neverland" data-name="The Promised Neverland">
-            <div class="overlay"><a href="https://hianime.to/the-promised-neverland-55" target="_blank">The Promised Neverland</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/paradise.jpeg" alt="Paradise Kiss" data-name="Paradise Kiss">
-            <div class="overlay"><a href="https://hianime.to/paradise-kiss-758" target="_blank">Paradise Kiss</a></div>
-        </div>
-    </div>
-
-    <!-- -------------------- Action Category -------------------- -->
-    <div class="category">Action (Series)</div>
-    <div class="scroll-container">
-        <div class="scroll-card">
-            <img src="image/sungjiwoo.jpg" alt="Solo Leveling" data-name="Solo Leveling">
-            <div class="overlay"><a href="https://hianime.to/solo-leveling-18718" target="_blank">Solo Leveling</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/lightyagami.jpg" alt="Death Note" data-name="Death Note">
-            <div class="overlay"><a href="https://hianime.to/death-note-60" target="_blank">Death Note</a></div>
-        </div>
-
-        <div class="scroll-card">
-            <img src="image/tokyorevengers.jpg" alt="Tokyo Revengers" data-name="Tokyo Revengers">
-            <div class="overlay"><a href="https://hianime.to/tokyo-revengers-15585" target="_blank">Tokyo Revengers</a></div>
-        </div>
-    </div>
-
-    <!-- MODAL -->
+    <!-- Character modal -->
     <div id="animeModal" class="modal">
         <div class="modal-content">
             <span class="closeBtn">&times;</span>
@@ -110,6 +35,34 @@
         </div>
     </div>
 
+    <!-- Category picker (admin only, shown when adding a new item) -->
+    <div id="categoryModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeCategoryModal()">&times;</span>
+            <h2>Select Category</h2>
+            <div id="categoryList" class="modal-buttons-stacked"></div>
+            <hr style="margin: 20px 0; border: 1px solid var(--accent); opacity: 0.3;">
+            <div class="add-category-box">
+                <input type="text" id="newCategoryInput" placeholder="New Category Name...">
+                <button onclick="addNewCategory()" class="btn-yes" style="margin-top: 10px; width: 100%;">+ Add Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete confirmation (admin only) -->
+    <div id="removeModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeRemoveModal()">&times;</span>
+            <h2>Are you sure?</h2>
+            <p id="removeText">This will permanently delete it.</p>
+            <div class="modal-buttons-horizontal">
+                <button id="confirmRemove" class="btn-yes">Yes, Delete</button>
+                <button id="cancelRemove" class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="watched.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
