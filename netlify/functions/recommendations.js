@@ -67,37 +67,10 @@ exports.handler = async (event) => {
                 };
             }
 
-            // Basic rate limiting: this is the only endpoint anyone can write
-            // to without a passcode, so cap how fast one visitor can post.
             const ip = event.headers['x-nf-client-connection-ip']
                 || event.headers['client-ip']
                 || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
                 || 'unknown';
-
-            const [recent] = await db.query(
-                'SELECT COUNT(*) AS count FROM recommendations WHERE ip_address = ? AND created_at > (NOW() - INTERVAL 10 MINUTE)',
-                [ip]
-            );
-            if (recent[0].count >= 5) {
-                return {
-                    statusCode: 429,
-                    headers,
-                    body: JSON.stringify({ error: 'Too many recommendations too fast. Please wait a bit.' }),
-                };
-            }
-
-            // Prevent the exact same person from adding the exact same anime twice
-            const [existing] = await db.query(
-                'SELECT id FROM recommendations WHERE user_name = ? AND anime_title = ? LIMIT 1',
-                [userName, animeTitle]
-            );
-            if (existing.length > 0) {
-                return {
-                    statusCode: 409,
-                    headers,
-                    body: JSON.stringify({ error: 'This anime is already on that user\'s list' }),
-                };
-            }
 
             const [result] = await db.query(
                 'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link, ip_address) VALUES (?, ?, ?, ?, ?)',
@@ -156,4 +129,4 @@ exports.handler = async (event) => {
     } finally {
         if (db) await db.end();
     }
-};
+};t

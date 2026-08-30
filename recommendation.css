@@ -16,6 +16,22 @@
     flex-shrink: 0;
 }
 
+/* Match the same mobile breakpoints as the rest of the site, so
+   recommendation cards actually shrink on phones like everywhere else */
+@media screen and (max-width: 768px) {
+    .scroll-container .anime-card {
+        min-width: 160px;
+        height: 240px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .scroll-container .anime-card {
+        min-width: 110px;
+        height: 165px;
+    }
+}
+
 .user-category {
     font-size: 1.5em;
     font-weight: 700;
