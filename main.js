@@ -2,26 +2,72 @@ function loadNavbar() {
     const navPlaceholder = document.getElementById('nav-placeholder');
     if (!navPlaceholder) return;
 
-    // Get the current file name (e.g., index.html)
-    const currentPage = window.location.pathname.split("/").pop() || "index.html";
-    const adminLabel = isAdmin() ? "Logout" : "Admin";
+    // Get the current page name, stripping .html if present (someone might
+    // still land on the .html URL directly) so it matches our clean links
+    let currentPage = window.location.pathname.split("/").pop() || "index";
+    currentPage = currentPage.replace(/\.html$/, "");
+    if (currentPage === "") currentPage = "index";
 
-    const navHTML = `
-        <nav>
-            <a href="index.html" class="${currentPage === 'index.html' ? 'active' : ''}">Home</a>
-            <a href="watched.html" class="${currentPage === 'watched.html' ? 'active' : ''}">Watched</a>
-            <a href="notcompleted.html" class="${currentPage === 'notcompleted.html' ? 'active' : ''}">Not Completed</a>
-            <a href="wishlist.html" class="${currentPage === 'wishlist.html' ? 'active' : ''}">Wishlist</a>
-            <a href="recommendation.html" class="${currentPage === 'recommendation.html' ? 'active' : ''}">Recommendation</a>
-            <a href="search.html" class="${currentPage === 'search.html' ? 'active' : ''}">Search</a>
+    const adminLabel = isAdmin() ? "Logout" : "Admin";
+    const active = (page) => currentPage === page ? "active" : "";
+
+    // Desktop nav: unchanged pill style, always visible on wider screens
+    const desktopNavHTML = `
+        <nav class="desktop-nav">
+            <a href="/" class="${active('index')}">Home</a>
+            <a href="/watched" class="${active('watched')}">Watched</a>
+            <a href="/notcompleted" class="${active('notcompleted')}">Dropped</a>
+            <a href="/wishlist" class="${active('wishlist')}">Wishlist</a>
+            <a href="/recommendation" class="${active('recommendation')}">Recommendation</a>
+            <a href="/search" class="${active('search')}">Search</a>
             <a href="#" id="adminNavLink">${adminLabel}</a>
         </nav>
     `;
 
-    navPlaceholder.innerHTML = navHTML;
+    // Mobile nav: fixed bottom tab bar with 5 primary tabs + a More sheet
+    // for the two least-used pages (Dropped, Admin)
+    const mobileNavHTML = `
+        <div class="tab-bar">
+            <a href="/" class="tab-item ${active('index')}"><span class="icon">🏠</span>Home</a>
+            <a href="/watched" class="tab-item ${active('watched')}"><span class="icon">🎬</span>Watched</a>
+            <a href="/wishlist" class="tab-item ${active('wishlist')}"><span class="icon">🍿</span>Wishlist</a>
+            <a href="/recommendation" class="tab-item ${active('recommendation')}"><span class="icon">💌</span>Recs</a>
+            <a href="/search" class="tab-item ${active('search')}"><span class="icon">🔍</span>Search</a>
+            <button class="tab-item" id="moreTabBtn"><span class="icon">⋯</span>More</button>
+        </div>
+        <div class="tab-overlay" id="tabOverlay"></div>
+        <div class="more-sheet" id="moreSheet">
+            <div class="sheet-handle"></div>
+            <a href="/notcompleted" class="more-link ${active('notcompleted')}"><span class="icon">⏳</span>Dropped</a>
+            <a href="#" id="adminMoreLink" class="more-link"><span class="icon">🔒</span>${adminLabel}</a>
+        </div>
+    `;
+
+    navPlaceholder.innerHTML = desktopNavHTML + mobileNavHTML;
     injectAdminModal();
 
+    const moreTabBtn = document.getElementById("moreTabBtn");
+    const moreSheet = document.getElementById("moreSheet");
+    const tabOverlay = document.getElementById("tabOverlay");
+
+    function toggleMoreSheet() {
+        moreSheet.classList.toggle("open");
+        tabOverlay.classList.toggle("show");
+    }
+
+    moreTabBtn.addEventListener("click", toggleMoreSheet);
+    tabOverlay.addEventListener("click", toggleMoreSheet);
+
     document.getElementById("adminNavLink").addEventListener("click", (e) => {
+        e.preventDefault();
+        if (isAdmin()) {
+            logoutAdmin();
+        } else {
+            openAdminModal();
+        }
+    });
+
+    document.getElementById("adminMoreLink").addEventListener("click", (e) => {
         e.preventDefault();
         if (isAdmin()) {
             logoutAdmin();
@@ -146,10 +192,13 @@ if (modal) {
   const CHARACTERS_QUERY = `
     query ($search: String) {
       Media(search: $search, type: ANIME) {
-        characters(sort: ROLE, perPage: 6) {
-          nodes {
-            name { full }
-            image { large }
+        characters(sort: ROLE, perPage: 10) {
+          edges {
+            role
+            node {
+              name { full }
+              image { large }
+            }
           }
         }
       }
@@ -183,12 +232,15 @@ if (modal) {
       });
 
       const json = await response.json();
-      const chars = json.data?.Media?.characters?.nodes || [];
+      const edges = json.data?.Media?.characters?.edges || [];
+      const chars = edges
+        .filter(e => e.role === "MAIN")
+        .map(e => e.node);
 
       characters.innerHTML = "";
 
       if (chars.length === 0) {
-        characters.innerHTML = "<p>No characters found.</p>";
+        characters.innerHTML = "<p>No protagonists found.</p>";
       } else {
         chars.forEach(c => {
           characters.innerHTML += `

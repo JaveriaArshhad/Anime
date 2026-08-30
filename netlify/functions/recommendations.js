@@ -1,4 +1,5 @@
 const mysql = require('mysql2/promise');
+const crypto = require('crypto');
 
 async function getConnection() {
     return mysql.createConnection({
@@ -72,30 +73,26 @@ exports.handler = async (event) => {
                 || (event.headers['x-forwarded-for'] || '').split(',')[0].trim()
                 || 'unknown';
 
+            const ownerToken = crypto.randomBytes(16).toString('hex');
+
             const [result] = await db.query(
-                'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link, ip_address) VALUES (?, ?, ?, ?, ?)',
-                [userName, animeTitle, animeImage || null, animeLink || null, ip]
+                'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link, ip_address, owner_token) VALUES (?, ?, ?, ?, ?, ?)',
+                [userName, animeTitle, animeImage || null, animeLink || null, ip, ownerToken]
             );
 
             return {
                 statusCode: 201,
                 headers,
-                body: JSON.stringify({ id: result.insertId }),
+                body: JSON.stringify({ id: result.insertId, ownerToken }),
             };
         }
 
-        // ---- DELETE: remove a single recommendation by id (admin only) ----
+        // ---- DELETE: remove a single recommendation by id.
+        // Allowed for admin (passcode), OR the original submitter (ownerToken
+        // matching what was privately given back when they created it). ----
         if (event.httpMethod === 'DELETE') {
             const body = JSON.parse(event.body || '{}');
-            const { id, passcode } = body;
-
-            if (!process.env.ADMIN_PASSCODE || passcode !== process.env.ADMIN_PASSCODE) {
-                return {
-                    statusCode: 403,
-                    headers,
-                    body: JSON.stringify({ error: 'Not authorized' }),
-                };
-            }
+            const { id, passcode, ownerToken } = body;
 
             if (!id) {
                 return {
@@ -105,12 +102,27 @@ exports.handler = async (event) => {
                 };
             }
 
-            await db.query('DELETE FROM recommendations WHERE id = ?', [id]);
+            const isAdmin = process.env.ADMIN_PASSCODE && passcode === process.env.ADMIN_PASSCODE;
+
+            if (isAdmin) {
+                await db.query('DELETE FROM recommendations WHERE id = ?', [id]);
+                return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+            }
+
+            if (ownerToken) {
+                const [result] = await db.query(
+                    'DELETE FROM recommendations WHERE id = ? AND owner_token = ?',
+                    [id, ownerToken]
+                );
+                if (result.affectedRows > 0) {
+                    return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
+                }
+            }
 
             return {
-                statusCode: 200,
+                statusCode: 403,
                 headers,
-                body: JSON.stringify({ success: true }),
+                body: JSON.stringify({ error: 'Not authorized' }),
             };
         }
 

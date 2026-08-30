@@ -5,3 +5,28 @@
   publish = "."
   functions = "netlify/functions"
   port = 8888
+
+[[redirects]]
+  from = "/watched"
+  to = "/watched.html"
+  status = 200
+
+[[redirects]]
+  from = "/notcompleted"
+  to = "/notcompleted.html"
+  status = 200
+
+[[redirects]]
+  from = "/wishlist"
+  to = "/wishlist.html"
+  status = 200
+
+[[redirects]]
+  from = "/recommendation"
+  to = "/recommendation.html"
+  status = 200
+
+[[redirects]]
+  from = "/search"
+  to = "/search.html"
+  status = 200

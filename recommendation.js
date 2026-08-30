@@ -7,6 +7,23 @@ const API_URL = "/.netlify/functions/recommendations";
 let currentId = null;
 let currentAnime = null;
 
+// --- Track which recommendations THIS browser submitted, so the person
+// can undo their own mistake (e.g. picked the wrong anime) without
+// needing the admin passcode. Stored as { [id]: ownerToken }.
+function getMyRecommendations() {
+    try {
+        return JSON.parse(localStorage.getItem("myRecommendationTokens")) || {};
+    } catch {
+        return {};
+    }
+}
+
+function rememberMyRecommendation(id, ownerToken) {
+    const mine = getMyRecommendations();
+    mine[id] = ownerToken;
+    localStorage.setItem("myRecommendationTokens", JSON.stringify(mine));
+}
+
 document.addEventListener("DOMContentLoaded", loadRecommendations);
 addBtn.addEventListener("click", addRecommendation);
 
@@ -229,6 +246,11 @@ async function confirmAndAddRecommendation(animeData, rawUserName) {
             return;
         }
 
+        const result = await response.json();
+        if (result.id && result.ownerToken) {
+            rememberMyRecommendation(result.id, result.ownerToken);
+        }
+
         await loadRecommendations();
 
         searchResultsBox.innerHTML = "";
@@ -277,6 +299,7 @@ async function displayRecommendations() {
     });
 
     const adminMode = isAdmin(); // from main.js
+    const myRecs = getMyRecommendations();
 
     for (const key in grouped) {
         const userData = grouped[key];
@@ -293,11 +316,19 @@ async function displayRecommendations() {
         userData.list.forEach(anime => {
             const card = document.createElement("div");
             card.classList.add("anime-card");
+            card.style.position = "relative";
 
-            // Only admins can click a card to manage it — everyone else just views
+            const isOwnedByMe = myRecs.hasOwnProperty(anime.id);
+            const canManage = adminMode || isOwnedByMe;
+
             if (adminMode) {
+                // Admin gets full options: add to wishlist or remove
                 card.style.cursor = "pointer";
                 card.onclick = () => openOptionsModal(anime);
+            } else if (isOwnedByMe) {
+                // The original submitter can remove just their own mistake
+                card.style.cursor = "pointer";
+                card.onclick = () => requestOwnerRemove(anime, myRecs[anime.id]);
             } else {
                 card.style.cursor = "default";
             }
@@ -308,29 +339,62 @@ async function displayRecommendations() {
                     <a>${anime.title}</a>
                 </div>
             `;
+
+            if (canManage) {
+                const deleteBadge = document.createElement("span");
+                deleteBadge.textContent = "🗑";
+                deleteBadge.title = adminMode ? "Manage this recommendation" : "Remove your recommendation";
+                deleteBadge.style.cssText = "position:absolute; top:6px; right:8px; z-index:5; cursor:pointer; background:rgba(255,255,255,0.85); border-radius:50%; width:26px; height:26px; display:flex; align-items:center; justify-content:center; font-size:0.9em;";
+                deleteBadge.onclick = (e) => {
+                    e.stopPropagation();
+                    if (adminMode) {
+                        openOptionsModal(anime);
+                    } else {
+                        requestOwnerRemove(anime, myRecs[anime.id]);
+                    }
+                };
+                card.appendChild(deleteBadge);
+            }
+
             userDiv.appendChild(card);
         });
     }
 }
 
+// A non-admin owner removing their own accidental submission
+function requestOwnerRemove(anime, ownerToken) {
+    currentId = anime.id;
+    currentAnime = { ...anime, ownerToken };
+    document.getElementById('removeText').innerText = `Remove your recommendation "${anime.title}"?`;
+    document.getElementById('removeModal').style.display = "flex";
+}
+
 async function removeSingle(id) {
     const passcode = sessionStorage.getItem("adminPasscode");
+    const ownerToken = currentAnime?.ownerToken || null;
 
     try {
         const response = await fetch(API_URL, {
             method: 'DELETE',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, passcode }),
+            body: JSON.stringify({ id, passcode, ownerToken }),
         });
 
         if (response.status === 403) {
-            alert("Your admin session isn't valid. Please log in again.");
+            alert("You're not able to remove this recommendation.");
             return;
         }
 
         if (!response.ok) {
             alert("Couldn't remove that recommendation. Please try again.");
             return;
+        }
+
+        // If this was a self-delete, forget the token too
+        const myRecs = getMyRecommendations();
+        if (myRecs[id]) {
+            delete myRecs[id];
+            localStorage.setItem("myRecommendationTokens", JSON.stringify(myRecs));
         }
 
         displayRecommendations();

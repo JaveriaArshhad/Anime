@@ -27,8 +27,8 @@
 
 @media screen and (max-width: 480px) {
     .scroll-container .anime-card {
-        min-width: 110px;
-        height: 165px;
+        min-width: 140px;
+        height: 210px;
     }
 }
 

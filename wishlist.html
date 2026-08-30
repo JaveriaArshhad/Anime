@@ -3,29 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Watchlist</title>
+    <title>Dropped Anime</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>🍿 My Watchlist</h1>
-        <p>Anime I'm planning to watch!</p>
+        <h1>⏳ Dropped Anime</h1>
+        <p>Click on the title to continue watching on Crunchyroll!</p>
     </header>
 
     <div id="nav-placeholder"></div>
 
-    <!-- Admin-only: search to add a new item directly -->
+    <!-- Admin-only: search to add a new item -->
     <div id="adminAddBox" style="display:none;">
         <div class="recommend-form" style="max-width: 500px; margin: 20px auto;">
-            <input type="text" id="wishlistSearchInput" placeholder="Search an anime to add...">
-            <button id="wishlistSearchBtn">Search</button>
+            <input type="text" id="ncSearchInput" placeholder="Search an anime you haven't finished...">
+            <button id="ncSearchBtn">Search</button>
         </div>
-        <p id="wishlistSearchHint" class="search-hint"></p>
-        <div id="wishlistSearchResults" class="scroll-container"></div>
+        <p id="ncSearchHint" class="search-hint"></p>
+        <div id="ncSearchResults" class="scroll-container"></div>
     </div>
 
-    <section id="wishlistGrid" class="anime-grid"></section>
+    <div id="notcompletedGrid" class="anime-grid"></div>
 
+    <!-- Reason input (admin only, shown after picking a search result) -->
+    <div id="reasonModal" class="modal">
+        <div class="modal-content">
+            <span class="closeBtn" onclick="closeReasonModal()">&times;</span>
+            <h2 id="reasonTitle">Why didn't you finish it?</h2>
+            <div class="add-category-box">
+                <input type="text" id="reasonInput" placeholder="e.g. Watched till ep 5, wasn't fun">
+                <button onclick="confirmAdd()" class="btn-yes" style="width:100%;">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete confirmation (admin only) -->
     <div id="removeModal" class="modal">
         <div class="modal-content">
             <span class="closeBtn" onclick="closeRemoveModal()">&times;</span>
@@ -33,12 +46,12 @@
             <p id="removeText">This will permanently delete it.</p>
             <div class="modal-buttons-horizontal">
                 <button id="confirmRemove" class="btn-yes">Yes, Delete</button>
-                <button id="cancelRemove" class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
+                <button class="btn-no" onclick="closeRemoveModal()">No, Keep it</button>
             </div>
         </div>
     </div>
 
-    <script src="wishlist.js"></script>
+    <script src="notcompleted.js"></script>
     <script src="main.js"></script>
 </body>
 </html>

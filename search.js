@@ -148,6 +148,18 @@ document.getElementById("confirmRecommendBtn").addEventListener("click", async (
 
         statusText.style.color = "#2f6b2f";
         statusText.textContent = "✨ Added to Recommendations!";
+
+        const result = await response.json();
+        if (result.id && result.ownerToken) {
+            try {
+                const mine = JSON.parse(localStorage.getItem("myRecommendationTokens")) || {};
+                mine[result.id] = result.ownerToken;
+                localStorage.setItem("myRecommendationTokens", JSON.stringify(mine));
+            } catch (e) {
+                console.error("Couldn't save ownership token:", e);
+            }
+        }
+
         setTimeout(closeRecommendModal, 900);
     } catch (error) {
         console.error("Error saving recommendation:", error);
