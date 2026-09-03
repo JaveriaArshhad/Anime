@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Under Maintenance</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #fdf3f7;
+            font-family: 'Nunito', sans-serif;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .flyer-wrap {
+            max-width: 500px;
+            width: 100%;
+        }
+        .note {
+            text-align: center;
+            color: #6E6A62;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="flyer-wrap">
+        <svg width="100%" viewBox="0 0 680 560" role="img">
+            <title>R.I.P. flyer for a website that died</title>
+            <desc>An illustrated memorial poster for a website that lived from August 27 2026 to September 3 2026, dying because its free database expired and was never paid for.</desc>
+            <defs>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#F3E1F7"/>
+                    <stop offset="100%" stop-color="#FBE3EC"/>
+                </linearGradient>
+                <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#9BC97A"/>
+                    <stop offset="100%" stop-color="#6FA34E"/>
+                </linearGradient>
+            </defs>
+
+            <rect x="190" y="24" width="300" height="60" rx="10" fill="#E7C6E0" stroke="#4A2545" stroke-width="2"/>
+            <text x="340" y="63" text-anchor="middle" font-size="32" font-weight="700" fill="#4A2545" font-family="'Playfair Display', serif">R.I.P.</text>
+
+            <rect x="0" y="100" width="680" height="245" fill="url(#sky)"/>
+            <circle cx="590" cy="150" r="26" fill="#FBE9A8"/>
+
+            <path d="M0 350 Q340 320 680 350 L680 560 L0 560 Z" fill="url(#ground)"/>
+
+            <ellipse cx="340" cy="402" rx="100" ry="14" fill="#5C7A3D"/>
+
+            <path d="M255 400 L255 265 A85 85 0 0 1 425 265 L425 400 Z" fill="#B9B6AD" stroke="#6E6A62" stroke-width="2"/>
+            <text x="340" y="292" text-anchor="middle" font-size="15" font-weight="700" fill="#4A453E">MY WEBSITE</text>
+            <line x1="290" y1="305" x2="390" y2="305" stroke="#4A453E" stroke-width="1"/>
+            <text x="340" y="326" text-anchor="middle" font-size="13" fill="#4A453E">javsanime.netlify.app</text>
+            <text x="340" y="345" text-anchor="middle" font-size="11" fill="#6E6A62">Aug 27, 2026 &#8211; Sep 3, 2026</text>
+
+            <g>
+                <circle cx="288" cy="392" r="4" fill="#FBE9A8"/>
+                <circle cx="281" cy="386" r="5" fill="#F0997B"/>
+                <circle cx="295" cy="386" r="5" fill="#F0997B"/>
+                <circle cx="281" cy="398" r="5" fill="#F0997B"/>
+                <circle cx="295" cy="398" r="5" fill="#F0997B"/>
+                <line x1="288" y1="396" x2="288" y2="415" stroke="#5C7A3D" stroke-width="2"/>
+            </g>
+            <g>
+                <circle cx="392" cy="392" r="4" fill="#FBE9A8"/>
+                <circle cx="385" cy="386" r="5" fill="#ED93B1"/>
+                <circle cx="399" cy="386" r="5" fill="#ED93B1"/>
+                <circle cx="385" cy="398" r="5" fill="#ED93B1"/>
+                <circle cx="399" cy="398" r="5" fill="#ED93B1"/>
+                <line x1="392" y1="396" x2="392" y2="415" stroke="#5C7A3D" stroke-width="2"/>
+            </g>
+
+            <text x="340" y="465" text-anchor="middle" font-size="14" fill="#4A2545">
+                <tspan x="340" dy="0">Cause of death: the free database</tspan>
+                <tspan x="340" dy="20">expired and was never paid for.</tspan>
+            </text>
+            <rect x="180" y="500" width="320" height="42" rx="8" fill="#E7C6E0" stroke="#4A2545" stroke-width="1.5"/>
+            <text x="340" y="526" text-anchor="middle" font-size="13" fill="#4A2545">Gone but not forgotten &#8212; mostly just forgotten</text>
+        </svg>
+        <p class="note">Back soon, hopefully with a more reliable database 🙏</p>
+    </div>
+</body>
+</html>

@@ -6,6 +6,13 @@
   functions = "netlify/functions"
   port = 8888
 
+# TEMPORARY: sends every page to the maintenance flyer while the database
+# is down. To bring the real site back, just delete this block.
+[[redirects]]
+  from = "/*"
+  to = "/maintenance.html"
+  status = 200
+
 [[redirects]]
   from = "/watched"
   to = "/watched.html"
