@@ -12,6 +12,7 @@
   from = "/*"
   to = "/maintenance.html"
   status = 200
+  force = true
 
 [[redirects]]
   from = "/watched"
