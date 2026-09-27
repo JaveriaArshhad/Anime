@@ -1,13 +1,9 @@
-const mysql = require('mysql2/promise');
+const { createClient } = require('@supabase/supabase-js');
 
-async function getConnection() {
-    return mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-}
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 exports.handler = async (event) => {
     const headers = {
@@ -20,23 +16,20 @@ exports.handler = async (event) => {
         return { statusCode: 204, headers, body: '' };
     }
 
-    let db;
-
     try {
-        db = await getConnection();
-
         // ---- GET: anyone can view ----
         if (event.httpMethod === 'GET') {
-            const [rows] = await db.execute(
-                'SELECT id, anime_title, anime_image, anime_link, reason, created_at FROM notcompleted ORDER BY created_at ASC'
-            );
-            return { statusCode: 200, headers, body: JSON.stringify(rows) };
+            const { data, error } = await supabase
+                .from('notcompleted')
+                .select('id, anime_title, anime_image, anime_link, reason, created_at')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            return { statusCode: 200, headers, body: JSON.stringify(data) };
         }
 
         // ---- POST: add an item (admin only) ----
         if (event.httpMethod === 'POST') {
-            const body = JSON.parse(event.body || '{}');
-            const { animeTitle, animeImage, animeLink, reason, passcode } = body;
+            const { animeTitle, animeImage, animeLink, reason, passcode } = JSON.parse(event.body || '{}');
 
             if (!process.env.ADMIN_PASSCODE || passcode !== process.env.ADMIN_PASSCODE) {
                 return { statusCode: 403, headers, body: JSON.stringify({ error: 'Not authorized' }) };
@@ -46,26 +39,29 @@ exports.handler = async (event) => {
                 return { statusCode: 400, headers, body: JSON.stringify({ error: 'animeTitle is required' }) };
             }
 
-            const [existing] = await db.execute(
-                'SELECT id FROM notcompleted WHERE anime_title = ? LIMIT 1',
-                [animeTitle]
-            );
+            const { data: existing, error: findError } = await supabase
+                .from('notcompleted')
+                .select('id')
+                .eq('anime_title', animeTitle)
+                .limit(1);
+            if (findError) throw findError;
             if (existing.length > 0) {
                 return { statusCode: 409, headers, body: JSON.stringify({ error: 'Already on the list' }) };
             }
 
-            const [result] = await db.execute(
-                'INSERT INTO notcompleted (anime_title, anime_image, anime_link, reason) VALUES (?, ?, ?, ?)',
-                [animeTitle, animeImage || null, animeLink || null, reason || null]
-            );
+            const { data, error } = await supabase
+                .from('notcompleted')
+                .insert({ anime_title: animeTitle, anime_image: animeImage || null, anime_link: animeLink || null, reason: reason || null })
+                .select('id')
+                .single();
+            if (error) throw error;
 
-            return { statusCode: 201, headers, body: JSON.stringify({ id: result.insertId }) };
+            return { statusCode: 201, headers, body: JSON.stringify({ id: data.id }) };
         }
 
         // ---- DELETE: remove an item (admin only) ----
         if (event.httpMethod === 'DELETE') {
-            const body = JSON.parse(event.body || '{}');
-            const { id, passcode } = body;
+            const { id, passcode } = JSON.parse(event.body || '{}');
 
             if (!process.env.ADMIN_PASSCODE || passcode !== process.env.ADMIN_PASSCODE) {
                 return { statusCode: 403, headers, body: JSON.stringify({ error: 'Not authorized' }) };
@@ -75,7 +71,8 @@ exports.handler = async (event) => {
                 return { statusCode: 400, headers, body: JSON.stringify({ error: 'id is required' }) };
             }
 
-            await db.execute('DELETE FROM notcompleted WHERE id = ?', [id]);
+            const { error } = await supabase.from('notcompleted').delete().eq('id', id);
+            if (error) throw error;
             return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
         }
 
@@ -83,7 +80,5 @@ exports.handler = async (event) => {
     } catch (error) {
         console.error('Database error:', error);
         return { statusCode: 500, headers, body: JSON.stringify({ error: 'Something went wrong on the server.' }) };
-    } finally {
-        if (db) await db.end();
     }
 };

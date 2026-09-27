@@ -1,14 +1,10 @@
-const mysql = require('mysql2/promise');
+const { createClient } = require('@supabase/supabase-js');
 const crypto = require('crypto');
 
-async function getConnection() {
-    return mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-    });
-}
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 exports.handler = async (event) => {
     const headers = {
@@ -22,50 +18,32 @@ exports.handler = async (event) => {
         return { statusCode: 204, headers, body: '' };
     }
 
-    let db;
-
     try {
-        db = await getConnection();
-
-        // ---- GET: return every recommendation, grouped isn't needed here;
-        // the frontend groups them by user_name itself ----
+        // ---- GET: return every recommendation; the frontend groups them by user_name ----
         if (event.httpMethod === 'GET') {
-            const [rows] = await db.query(
-                'SELECT id, user_name, anime_title, anime_image, anime_link, created_at FROM recommendations ORDER BY created_at ASC'
-            );
-            return {
-                statusCode: 200,
-                headers,
-                body: JSON.stringify(rows),
-            };
+            const { data, error } = await supabase
+                .from('recommendations')
+                .select('id, user_name, anime_title, anime_image, anime_link, created_at')
+                .order('created_at', { ascending: true });
+            if (error) throw error;
+            return { statusCode: 200, headers, body: JSON.stringify(data) };
         }
 
         // ---- POST: add a new recommendation ----
         if (event.httpMethod === 'POST') {
-            const body = JSON.parse(event.body || '{}');
-            const { userName, animeTitle, animeImage, animeLink, website } = body;
+            const { userName, animeTitle, animeImage, animeLink, website } = JSON.parse(event.body || '{}');
 
-            // Honeypot: real users never see or fill this field. A bot that
-            // fills every field in the form will trip this, so we quietly
-            // pretend it succeeded without actually writing anything.
+            // Honeypot: real users never fill this field, so quietly pretend success for bots.
             if (website) {
                 return { statusCode: 201, headers, body: JSON.stringify({ id: 0 }) };
             }
 
             if (!userName || !animeTitle) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'userName and animeTitle are required' }),
-                };
+                return { statusCode: 400, headers, body: JSON.stringify({ error: 'userName and animeTitle are required' }) };
             }
 
             if (userName.length > 100 || animeTitle.length > 255) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'Input too long' }),
-                };
+                return { statusCode: 400, headers, body: JSON.stringify({ error: 'Input too long' }) };
             }
 
             const ip = event.headers['x-nf-client-connection-ip']
@@ -75,70 +53,58 @@ exports.handler = async (event) => {
 
             const ownerToken = crypto.randomBytes(16).toString('hex');
 
-            const [result] = await db.query(
-                'INSERT INTO recommendations (user_name, anime_title, anime_image, anime_link, ip_address, owner_token) VALUES (?, ?, ?, ?, ?, ?)',
-                [userName, animeTitle, animeImage || null, animeLink || null, ip, ownerToken]
-            );
+            const { data, error } = await supabase
+                .from('recommendations')
+                .insert({
+                    user_name: userName,
+                    anime_title: animeTitle,
+                    anime_image: animeImage || null,
+                    anime_link: animeLink || null,
+                    ip_address: ip,
+                    owner_token: ownerToken,
+                })
+                .select('id')
+                .single();
+            if (error) throw error;
 
-            return {
-                statusCode: 201,
-                headers,
-                body: JSON.stringify({ id: result.insertId, ownerToken }),
-            };
+            return { statusCode: 201, headers, body: JSON.stringify({ id: data.id, ownerToken }) };
         }
 
-        // ---- DELETE: remove a single recommendation by id.
-        // Allowed for admin (passcode), OR the original submitter (ownerToken
-        // matching what was privately given back when they created it). ----
+        // ---- DELETE: admin (passcode) or the original submitter (ownerToken) ----
         if (event.httpMethod === 'DELETE') {
-            const body = JSON.parse(event.body || '{}');
-            const { id, passcode, ownerToken } = body;
+            const { id, passcode, ownerToken } = JSON.parse(event.body || '{}');
 
             if (!id) {
-                return {
-                    statusCode: 400,
-                    headers,
-                    body: JSON.stringify({ error: 'id is required' }),
-                };
+                return { statusCode: 400, headers, body: JSON.stringify({ error: 'id is required' }) };
             }
 
             const isAdmin = process.env.ADMIN_PASSCODE && passcode === process.env.ADMIN_PASSCODE;
 
             if (isAdmin) {
-                await db.query('DELETE FROM recommendations WHERE id = ?', [id]);
+                const { error } = await supabase.from('recommendations').delete().eq('id', id);
+                if (error) throw error;
                 return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
             }
 
             if (ownerToken) {
-                const [result] = await db.query(
-                    'DELETE FROM recommendations WHERE id = ? AND owner_token = ?',
-                    [id, ownerToken]
-                );
-                if (result.affectedRows > 0) {
+                const { data, error } = await supabase
+                    .from('recommendations')
+                    .delete()
+                    .eq('id', id)
+                    .eq('owner_token', ownerToken)
+                    .select('id');
+                if (error) throw error;
+                if (data.length > 0) {
                     return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
                 }
             }
 
-            return {
-                statusCode: 403,
-                headers,
-                body: JSON.stringify({ error: 'Not authorized' }),
-            };
+            return { statusCode: 403, headers, body: JSON.stringify({ error: 'Not authorized' }) };
         }
 
-        return {
-            statusCode: 405,
-            headers,
-            body: JSON.stringify({ error: 'Method not allowed' }),
-        };
+        return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
     } catch (error) {
         console.error('Database error:', error);
-        return {
-            statusCode: 500,
-            headers,
-            body: JSON.stringify({ error: 'Something went wrong on the server.' }),
-        };
-    } finally {
-        if (db) await db.end();
+        return { statusCode: 500, headers, body: JSON.stringify({ error: 'Something went wrong on the server.' }) };
     }
 };
