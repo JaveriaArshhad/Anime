@@ -73,18 +73,18 @@ nav a:hover, nav a.active {
     box-shadow: 0 3px 8px rgba(0,0,0,0.15);
 }
 
-/* -------------------- Mobile Bottom Tab Bar -------------------- */
+/* -------------------- Mobile Top Tab Bar -------------------- */
 .tab-bar, .tab-overlay, .more-sheet {
     display: none; /* hidden on desktop; desktop-nav pill shows instead */
 }
 
 @media screen and (max-width: 768px) {
     .desktop-nav {
-        display: none; /* replaced by the bottom tab bar on mobile */
+        display: none; /* replaced by the top tab bar on mobile */
     }
 
     body {
-        padding-bottom: 80px; /* keep content clear of the fixed tab bar */
+        padding-top: 90px; /* keep content clear of the fixed tab bar */
     }
 
     .tab-bar {
@@ -92,14 +92,14 @@ nav a:hover, nav a.active {
         justify-content: space-around;
         align-items: center;
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         width: 100%;
         background: white;
-        border-top: 1px solid #f0d9e6;
-        padding: 8px 0 12px;
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-        z-index: 500;
+        border-bottom: 1px solid #f0d9e6;
+        padding: 10px 0 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 700; /* above the More sheet, so the sheet slides out from under it */
         box-sizing: border-box;
     }
 
@@ -115,6 +115,12 @@ nav a:hover, nav a.active {
         background: none;
         border: none;
         cursor: pointer;
+    }
+
+    .tab-item:hover {
+        filter: none;
+        transform: none;
+        box-shadow: none; /* cancel the general button hover lift */
     }
 
     .tab-item .icon {
@@ -139,18 +145,19 @@ nav a:hover, nav a.active {
     }
 
     .more-sheet {
-        display: block;
+        display: flex;
+        flex-direction: column;
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         width: 100%;
         background: white;
-        border-radius: 20px 20px 0 0;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
-        transform: translateY(100%);
+        border-radius: 0 0 20px 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        transform: translateY(-100%);
         transition: transform 0.3s ease;
         z-index: 600;
-        padding: 15px;
+        padding: 75px 15px 15px; /* top padding clears the tab bar */
         box-sizing: border-box;
     }
 
@@ -163,7 +170,8 @@ nav a:hover, nav a.active {
         height: 4px;
         background: #ddd;
         border-radius: 2px;
-        margin: 0 auto 12px;
+        margin: 12px auto 0;
+        order: 1; /* handle sits at the bottom edge of a top sheet */
     }
 
     .more-link {
